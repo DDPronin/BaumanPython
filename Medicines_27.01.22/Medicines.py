@@ -4,6 +4,7 @@
 import re
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import matplotlib.pyplot as plt
 
 
 class Medicine:
@@ -45,7 +46,6 @@ def read_file(file_name):
             out.append(medicine)
     return out
 
-
 def number_set_comparation(in1, in2):
     set1 = set(in1)
     set2 = set(in2)
@@ -75,6 +75,11 @@ def cosine_comparation(in1, in2):
         vectors = vectorizer.toarray()
         return cosine_similarity(vectors)[0][1]
 
+def graf(x, y):
+    plt.axis([0, 100000, 0, 100000])
+    plt.plot(x, y, 'ro')
+    plt.show()
+
 
 data = read_file('data.txt')
 
@@ -96,14 +101,25 @@ for medicine in data:
     result_PROD.append([(token_comp_PROD + number_comp_PROD) / 2, medicine])
     # Конечная оценка ср.ар. полученной пары значений с чисел и токенов
 
-result_NM.sort(key=lambda result_NM: result_NM[0], reverse=True)  # сорт. в обратном порядке
-result_PROD.sort(key=lambda result_PROD: result_NM[0], reverse=True)  # чтобы сразу видеть ошибки
+result_NM.sort(key=lambda result_NM: result_NM[0], reverse=False)  # сорт. в обратном порядке
+result_PROD.sort(key=lambda result_PROD: result_PROD[0], reverse=False)  # чтобы сразу видеть ошибки
 
 # вывести результат первого NM сравнения
+# num1 = []
 for element in result_NM:
     print(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL)
+    # num1.append(element[0])
+    # with open('NM.txt', "a", encoding="utf-8") as file:
+    #     file.write(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL + '\n')
+# graf(range(100000-1), num1)
+# print(sum(num1)/99999)
 
 # вывести результат второго PROD сравнения
-# for element in result_PROD:
-#     print(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
-
+# num2 = []
+for element in result_PROD:
+    print(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
+    # num2.append(element[0])
+    # with open('PROD.txt', "a", encoding="utf-8") as file:
+    #     file.write(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
+# graf(range(100000-1), num2)
+# print(sum(num2)/99999)
