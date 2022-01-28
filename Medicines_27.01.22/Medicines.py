@@ -70,7 +70,7 @@ def cosine_comparation(in1, in2):
         input_list = list()
         input_list.append(' '.join(processed_element1))
         input_list.append(' '.join(processed_element2))
-        print(input_list)
+        print(input_list)  # разбиваем токены так
         vectorizer = CountVectorizer().fit_transform(input_list)
         vectors = vectorizer.toarray()
         return cosine_similarity(vectors)[0][1]
