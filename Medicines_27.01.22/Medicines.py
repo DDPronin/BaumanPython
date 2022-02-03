@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 from transliterate import get_translit_function
 import numpy as np
+import Levenshtein
 
 
 class Medicine:
@@ -93,8 +94,12 @@ def cosine_comparation2(in1, in2):
         return cosine_similarity(vectors)[0][1]
 
 
-def sigmoid(x):
+def word_eq_sigmoid(x):
     return 1 / (1 + np.exp(-3 * (20 * x - 1)))
+
+
+def every_word_sigmoid(x):
+    return 1 / (1 + np.exp(-3 * (3 * x - 1.8)))
 
 
 def word_eq_filter(in1, in2, mode):
@@ -125,7 +130,55 @@ def word_eq_filter(in1, in2, mode):
             num += 1
     print(summa)
     print(num)
-    return sigmoid(summa / num)
+    return word_eq_sigmoid(summa / num)
+
+
+def levenshtein_metric(in1, in2, mode):
+    if len(in1) == 0 or len(in2) == 0:
+        return 0
+    else:
+        translit = get_translit_function('ru')
+        in1 = map(lambda word: translit(word, reversed=mode), in1)
+        in2 = map(lambda word: translit(word, reversed=mode), in2)
+        # in1, in2 = list(''.join(in1).split(' ')),  list(''.join(in2).split(' '))
+        maximum = 0
+        in1, in2 = list(in1), list(in2)
+        maximum = 0
+        for word1 in in1:
+            for word2 in in2:
+                if word1 == word2 and len(word1) > 3 and len(word2) > 3:
+                    return 1
+                elif len(word1) > 4 and len(word2) > 4:
+                    result = 1 - (2 * Levenshtein.distance(word1, word2) /
+                                  (len(word1) + len(word2)))
+                    if result > maximum:
+                        maximum = result
+        return maximum
+
+
+def every_word_metric(in1, in2, mode):
+    if len(in1) == 0 or len(in2) == 0:
+        return 0
+    else:
+        translit = get_translit_function('ru')
+        in1 = map(lambda word: translit(word, reversed=mode), in1)
+        in2 = map(lambda word: translit(word, reversed=mode), in2)
+        # in1, in2 = list(''.join(in1).split(' ')),  list(''.join(in2).split(' '))
+        maximum = 0
+        in1, in2 = list(in1), list(in2)
+        for word1 in in1:
+            for word2 in in2:
+                if word1 == word2 and len(word1) > 3 and len(word2) > 3:
+                    return 1
+                elif len(word1) > 4 and len(word2) > 4:
+                    vectorizer = CountVectorizer(analyzer='char_wb',
+                                                ngram_range=(2, 2)).fit([word1 + word2])
+                    vec1 = vectorizer.transform([word1])
+                    vec2 = vectorizer.transform([word2])
+                    result = cosine_similarity(vec1, vec2)
+                    if result > maximum:
+                        maximum = result
+        return every_word_sigmoid(maximum)
 
 
 def graf(x, y):
@@ -138,7 +191,8 @@ data = read_file('data.txt')
 
 result_NM = []  # результаты сравнений обрабатываются отдельно
 result_PROD = []  # можно создать какую-либо метрику для обобщения двух сравнений
-for medicine in data:
+for medicine in tqdm(data):
+
     medicine_tokens = medicine.get_tokens()
     medicine_numbers = medicine.get_numbers()
 
@@ -146,35 +200,45 @@ for medicine in data:
     token_comp_NM = cosine_comparation2(medicine_tokens[0], medicine_tokens[1])
     number_comp_NM = number_set_comparation(medicine_numbers[0], medicine_numbers[1])
     word_eq_ru_NM = word_eq_filter(medicine_tokens[0], medicine_tokens[1], False)
+    every_word_metric_NM = every_word_metric(medicine_tokens[0], medicine_tokens[1], False)
+    levenshtein_metric_NM = levenshtein_metric(medicine_tokens[0], medicine_tokens[1], False)
     if number_comp_NM == -1:
-        result_NM.append([token_comp_NM * 0.6 + word_eq_ru_NM * 0.4, medicine])
+        result_NM.append([token_comp_NM * 0.3 + word_eq_ru_NM * 0.2 +
+                          every_word_metric_NM * 0.25 + levenshtein_metric_NM * 0.25, medicine])
     else:
-        result_NM.append([token_comp_NM * 0.35 +
-                          number_comp_NM * 0.35 + word_eq_ru_NM * 0.3, medicine])
+        result_NM.append([token_comp_NM * 0.3 + number_comp_NM * 0.2 +
+                          word_eq_ru_NM * 0.15 + every_word_metric_NM * 0.15 +
+                          levenshtein_metric_NM * 0.2, medicine])
     # Конечная оценка ср.ар. полученной пары значений с чисел и токенов
 
     # PROD vs GROUP_NM_RUS
     token_comp_PROD = cosine_comparation2(medicine_tokens[2], medicine_tokens[3])
     number_comp_PROD = number_set_comparation(medicine_numbers[2], medicine_numbers[3])
     word_eq_ru_PROD = word_eq_filter(medicine_tokens[2], medicine_tokens[3], False)
+    every_word_metric_PROD = every_word_metric(medicine_tokens[2], medicine_tokens[3], False)
+    levenshtein_metric_PROD = levenshtein_metric(medicine_tokens[2], medicine_tokens[3], False)
     if number_comp_PROD == -1:
-        result_PROD.append([token_comp_PROD * 0.3 + word_eq_ru_PROD * 0.7, medicine])
+        result_PROD.append([token_comp_PROD * 0.2 + word_eq_ru_PROD * 0.3 +
+                               every_word_metric_PROD * 0.2 + levenshtein_metric_PROD * 0.3,
+                            medicine])
     else:
         result_PROD.append([token_comp_PROD * 0.2 +
-                            number_comp_PROD * 0.1 + word_eq_ru_PROD * 0.7, medicine])
+                            number_comp_PROD * 0.1 + word_eq_ru_PROD * 0.3 +
+                               every_word_metric_PROD * 0.2 + levenshtein_metric_PROD * 0.2,
+                            medicine])
     # Конечная оценка ср.ар. полученной пары значений с чисел и токенов
 
 result_NM.sort(key=lambda result_NM: result_NM[0], reverse=False)  # сорт. в обратном порядке
 result_PROD.sort(key=lambda result_PROD: result_PROD[0], reverse=False)  # чтобы сразу видеть ошибки
 
 # вывести результат первого NM сравнения
-#vnum1 = []
+#num1 = []
 for element in tqdm(result_NM):
     print(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL)
-    # num1.append(element[0])
-    with open('NM_3filt.txt', "a", encoding="utf-8") as file:
+    #num1.append(element[0])
+    with open('NM_with_5_filters_final.txt', "a", encoding="utf-8") as file:
         file.write(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL + '\n')
-# graf(range(100000-1), num1)
+#graf(range(100000-1), num1)
 # print(sum(num1)/99999)
 
 # вывести результат второго PROD сравнения
@@ -182,7 +246,7 @@ for element in tqdm(result_NM):
 for element in tqdm(result_PROD):
     print(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
     # num2.append(element[0])
-    with open('PROD_3filt.txt', "a", encoding="utf-8") as file:
+    with open('PROD_with_5_filters_final.txt', "a", encoding="utf-8") as file:
         file.write(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
 # graf(range(100000-1), num2)
 # print(sum(num2)/99999)
