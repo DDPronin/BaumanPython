@@ -103,15 +103,49 @@ def every_word_metric(in1, in2, mode):
         return every_word_sigmoid(maximum)
 
 
+def word_eq_sigmoid(x):
+    return 1 / (1 + np.exp(-3 * (20 * x - 1)))
+
+
+def word_eq_filter(in1, in2, mode):
+    if len(in1) == 0 or len(in2) == 0:
+        return 0
+    translit = get_translit_function('ru')
+    in1 = list(map(lambda word: translit(word, reversed=mode), in1))
+    in2 = list(map(lambda word: translit(word, reversed=mode), in2))
+    for word1 in in1:
+        for word2 in in2:
+            if word1 == word2:
+                return 1
+    input_list = list()
+    print(in1)
+    print(in2)
+    input_list.append(' '.join(in1))
+    input_list.append(' '.join(in2))
+    print(input_list)
+    vectorizer = CountVectorizer(analyzer='char_wb', ngram_range=(2, 4)).fit(input_list)
+    in1 = vectorizer.transform(in1)
+    in2 = vectorizer.transform(in2)
+    matrix = cosine_similarity(in1, in2)
+    summa = 0
+    num = 0
+    for line in matrix:
+        for number in line:
+            summa += number
+            num += 1
+    print(summa)
+    print(num)
+    return word_eq_sigmoid(summa / num)
+
 data = read_file('data.txt')
 result_NM = []
 result_PROD = []
 for medicine in data:
     medicine_tokens = medicine.get_tokens()
     print(medicine_tokens)
-    every_word_metric_NM = every_word_metric(medicine_tokens[0],
+    every_word_metric_NM = word_eq_filter(medicine_tokens[0],
                                               medicine_tokens[1], False)
-    every_word_metric_PROD = every_word_metric(medicine_tokens[2],
+    every_word_metric_PROD = word_eq_filter(medicine_tokens[2],
                                               medicine_tokens[3], False)
     result_NM.append([every_word_metric_NM, medicine])
     result_PROD.append([every_word_metric_PROD, medicine])
@@ -122,11 +156,11 @@ result_PROD.sort(key=lambda result_PROD: result_PROD[0], reverse=False)
 for element in tqdm(result_NM):
     print(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL)
     # num1.append(element[0])
-    with open('NM_every_word_sig_metric.txt', "a", encoding="utf-8") as file:
+    with open('NM_word_eq_metric.txt', "a", encoding="utf-8") as file:
         file.write(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL + '\n')
 
 for element in tqdm(result_PROD):
     print(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
     # num2.append(element[0])
-    with open('PROD_every_word_sig_metric.txt', "a", encoding="utf-8") as file:
+    with open('PROD_word_eq_metric.txt', "a", encoding="utf-8") as file:
         file.write(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)

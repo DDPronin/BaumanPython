@@ -236,8 +236,10 @@ result_PROD.sort(key=lambda result_PROD: result_PROD[0], reverse=False)  # чт�
 for element in tqdm(result_NM):
     print(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL)
     #num1.append(element[0])
-    with open('NM_with_5_filters_final.txt', "a", encoding="utf-8") as file:
-        file.write(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL + '\n')
+    with open('NM_with_5_filters_final3.txt', "a", encoding="utf-8") as file:
+        file.write(str(float(element[0])) + '\t' + element[1].CD_DT + '\t' +
+                   element[1].ID + '\t' + element[1].NM_CLI + '\t' + element[1].CD_U + '\t' +
+                   element[1].NM_FULL + '\n')
 #graf(range(100000-1), num1)
 # print(sum(num1)/99999)
 
@@ -246,7 +248,8 @@ for element in tqdm(result_NM):
 for element in tqdm(result_PROD):
     print(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
     # num2.append(element[0])
-    with open('PROD_with_5_filters_final.txt', "a", encoding="utf-8") as file:
-        file.write(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
+    with open('PROD_with_5_filters_final3.txt', "a", encoding="utf-8") as file:
+        file.write(str(float(element[0])) + '\t' + element[1].CD_DT + '\t' +
+                   element[1].ID + '\t' + element[1].PROD + '\t' + element[1].CD_U + '\t' + element[1].GROUP_NM_RUS + '\n')
 # graf(range(100000-1), num2)
 # print(sum(num2)/99999)
