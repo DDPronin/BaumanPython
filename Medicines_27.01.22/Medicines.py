@@ -189,10 +189,25 @@ def graf(x, y):
 
 data = read_file('data.txt')
 
+#weights_NM1 = [0.3, 0.2, 0.25, 0.25]
+#weights_NM2 = [0.3, 0.2, 0.15, 0.15, 0.2]
+
+weights_NM2 = [0, 0, 1, 0, 0]
+weights_NM1 = [0, 1, 0, 0]
+
+#weights_PROD1 = [0.2, 0.3, 0.2, 0.3]
+#weights_PROD2 = [0.2, 0.1, 0.3, 0.2, 0.2]
+
+weights_PROD2 = [0, 0, 1, 0, 0]
+weights_PROD1 = [0, 1, 0, 0]
+
 result_NM = []  # результаты сравнений обрабатываются отдельно
 result_PROD = []  # можно создать какую-либо метрику для обобщения двух сравнений
+result = []
 for medicine in tqdm(data):
 
+    iteration_sum_NM = 0
+    iteration_sum_PROD = 0
     medicine_tokens = medicine.get_tokens()
     medicine_numbers = medicine.get_numbers()
 
@@ -203,12 +218,18 @@ for medicine in tqdm(data):
     every_word_metric_NM = every_word_metric(medicine_tokens[0], medicine_tokens[1], False)
     levenshtein_metric_NM = levenshtein_metric(medicine_tokens[0], medicine_tokens[1], False)
     if number_comp_NM == -1:
-        result_NM.append([token_comp_NM * 0.3 + word_eq_ru_NM * 0.2 +
-                          every_word_metric_NM * 0.25 + levenshtein_metric_NM * 0.25, medicine])
+        iteration_sum_NM += token_comp_NM * weights_NM1[0] + \
+                        word_eq_ru_NM * weights_NM1[1] + \
+                        every_word_metric_NM * weights_NM1[2] + \
+                        levenshtein_metric_NM * weights_NM1[3]
+        result_NM.append([iteration_sum_NM, medicine])
     else:
-        result_NM.append([token_comp_NM * 0.3 + number_comp_NM * 0.2 +
-                          word_eq_ru_NM * 0.15 + every_word_metric_NM * 0.15 +
-                          levenshtein_metric_NM * 0.2, medicine])
+        iteration_sum_NM += token_comp_NM * weights_NM2[0] + \
+                         number_comp_NM * weights_NM2[1] + \
+                         word_eq_ru_NM * weights_NM2[2] + \
+                         every_word_metric_NM * weights_NM2[3] +\
+                         levenshtein_metric_NM * weights_NM2[4]
+        result_NM.append([iteration_sum_NM, medicine])
     # Конечная оценка ср.ар. полученной пары значений с чисел и токенов
 
     # PROD vs GROUP_NM_RUS
@@ -218,38 +239,52 @@ for medicine in tqdm(data):
     every_word_metric_PROD = every_word_metric(medicine_tokens[2], medicine_tokens[3], False)
     levenshtein_metric_PROD = levenshtein_metric(medicine_tokens[2], medicine_tokens[3], False)
     if number_comp_PROD == -1:
-        result_PROD.append([token_comp_PROD * 0.2 + word_eq_ru_PROD * 0.3 +
-                               every_word_metric_PROD * 0.2 + levenshtein_metric_PROD * 0.3,
+        iteration_sum_PROD = token_comp_PROD * 0.2 + \
+                             word_eq_ru_PROD * 0.3 +\
+                             every_word_metric_PROD * 0.2 + \
+                             levenshtein_metric_PROD * 0.3
+        result_PROD.append([iteration_sum_PROD,
                             medicine])
     else:
-        result_PROD.append([token_comp_PROD * 0.2 +
-                            number_comp_PROD * 0.1 + word_eq_ru_PROD * 0.3 +
-                               every_word_metric_PROD * 0.2 + levenshtein_metric_PROD * 0.2,
+        iteration_sum_PROD = token_comp_PROD * 0.2 + \
+                             number_comp_PROD * 0.1 + \
+                             word_eq_ru_PROD * 0.3 + \
+                             every_word_metric_PROD * 0.2 + \
+                             levenshtein_metric_PROD * 0.2
+        result_PROD.append([iteration_sum_PROD,
                             medicine])
-    # Конечная оценка ср.ар. полученной пары значений с чисел и токенов
+        # Конечная оценка ср.ар. полученной пары значений с чисел и токенов
+    result.append([(iteration_sum_NM + iteration_sum_PROD)/2, medicine])
 
+result.sort(key=lambda result: result[0], reverse=False)
 result_NM.sort(key=lambda result_NM: result_NM[0], reverse=False)  # сорт. в обратном порядке
 result_PROD.sort(key=lambda result_PROD: result_PROD[0], reverse=False)  # чтобы сразу видеть ошибки
 
 # вывести результат первого NM сравнения
 #num1 = []
-for element in tqdm(result_NM):
-    print(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL)
-    #num1.append(element[0])
-    with open('NM_with_5_filters_final3.txt', "a", encoding="utf-8") as file:
-        file.write(str(float(element[0])) + '\t' + element[1].CD_DT + '\t' +
-                   element[1].ID + '\t' + element[1].NM_CLI + '\t' + element[1].CD_U + '\t' +
-                   element[1].NM_FULL + '\n')
-#graf(range(100000-1), num1)
-# print(sum(num1)/99999)
+# for element in tqdm(result_NM):
+#     print(str(element[0]) + ' - ' + element[1].NM_CLI + ' vs ' + element[1].NM_FULL)
+#     #num1.append(element[0])
+#     with open('NM_with_5_filters_final3.txt', "a", encoding="utf-8") as file:
+#         file.write(str(float(element[0])) + '\t' + element[1].CD_DT + '\t' +
+#                    element[1].ID + '\t' + element[1].NM_CLI + '\t' + element[1].CD_U + '\t' +
+#                    element[1].NM_FULL + '\n')
+# #graf(range(100000-1), num1)
+# # print(sum(num1)/99999)
+#
+# # вывести результат второго PROD сравнения
+# # num2 = []
+# for element in tqdm(result_PROD):
+#     print(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
+#     # num2.append(element[0])
+#     with open('PROD_with_5_filters_final3.txt', "a", encoding="utf-8") as file:
+#         file.write(str(float(element[0])) + '\t' + element[1].CD_DT + '\t' +
+#                    element[1].ID + '\t' + element[1].PROD + '\t' + element[1].CD_U + '\t' + element[1].GROUP_NM_RUS + '\n')
+# # graf(range(100000-1), num2)
+# # print(sum(num2)/99999)
 
-# вывести результат второго PROD сравнения
-# num2 = []
-for element in tqdm(result_PROD):
-    print(str(element[0]) + ' - ' + element[1].PROD + ' vs ' + element[1].GROUP_NM_RUS)
-    # num2.append(element[0])
-    with open('PROD_with_5_filters_final3.txt', "a", encoding="utf-8") as file:
+for element in tqdm(result):
+    with open('NM+PROD.txt', "a", encoding="utf-8") as file:
         file.write(str(float(element[0])) + '\t' + element[1].CD_DT + '\t' +
-                   element[1].ID + '\t' + element[1].PROD + '\t' + element[1].CD_U + '\t' + element[1].GROUP_NM_RUS + '\n')
-# graf(range(100000-1), num2)
-# print(sum(num2)/99999)
+                   element[1].ID + '\t' + element[1].NM_CLI + '\t' + element[1].PROD + '\t' + element[1].CD_U +
+                   '\t' + element[1].NM_FULL + '\t' + element[1].GROUP_NM_RUS)

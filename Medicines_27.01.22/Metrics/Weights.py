@@ -207,7 +207,6 @@ def graf(x, y):
 
 data = read_file("learn_data.txt")
 
-
 result_NM = []
 for solution in tqdm(result):
     errors_NM = []
