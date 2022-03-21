@@ -26,9 +26,8 @@ for group in preresult:
 # ------ #
 
 class Medicine:
-    def __init__(self, SCORE = '', CD_DT = '', ID = '', NM_CLI = '', PROD = '', CD_U = '',
-                 NM_FULL = '', GROUP_NM_RUS = ''):
-        self.SCORE = SCORE
+    def __init__(self, CD_DT = '', ID = '', NM_CLI = '', PROD = '', CD_U = '',
+                 NM_FULL = '', GROUP_NM_RUS = '', MARK = ''):
         self.CD_DT = CD_DT
         self.ID = ID
         self.NM_CLI = NM_CLI
@@ -36,6 +35,7 @@ class Medicine:
         self.CD_U = CD_U
         self.NM_FULL = NM_FULL
         self.GROUP_NM_RUS = GROUP_NM_RUS
+        self.MARK = MARK
 
     def get_tokens(self):
         medicine_tokens = list()
@@ -59,10 +59,9 @@ def read_file(file_name):
         out = list()
         for line in dataFile:
             data_in_line = line.split('\t')
-            medicine = Medicine()
-            medicine.SCORE = float(data_in_line[0])
-            medicine.NM_CLI = data_in_line[1]
-            medicine.NM_FULL = data_in_line[2]
+            medicine = Medicine(data_in_line[0], data_in_line[1], data_in_line[2],
+                                data_in_line[3], data_in_line[4], data_in_line[5],
+                                data_in_line[6], data_in_line[7])
             out.append(medicine)
     return out
 
@@ -91,7 +90,7 @@ def cosine_comparation(in1, in2):
         input_list = list()
         input_list.append(' '.join(processed_element1))
         input_list.append(' '.join(processed_element2))
-        print(input_list)  # разбиваем токены так
+        # print(input_list)  # разбиваем токены так
         vectorizer = CountVectorizer().fit_transform(input_list)
         vectors = vectorizer.toarray()
         return cosine_similarity(vectors)[0][1]
@@ -104,7 +103,6 @@ def cosine_comparation2(in1, in2):
         input_list = list()
         input_list.append(' '.join(in1))
         input_list.append(' '.join(in2))
-        print(input_list)
         vectorizer = CountVectorizer(analyzer='char_wb', ngram_range=(2, 2)).fit_transform(input_list)
         vectors = vectorizer.toarray()
         return cosine_similarity(vectors)[0][1]
@@ -129,11 +127,8 @@ def word_eq_filter(in1, in2, mode):
             if word1 == word2:
                 return 1
     input_list = list()
-    print(in1)
-    print(in2)
     input_list.append(' '.join(in1))
     input_list.append(' '.join(in2))
-    print(input_list)
     vectorizer = CountVectorizer(analyzer='char_wb', ngram_range=(2, 4)).fit(input_list)
     in1 = vectorizer.transform(in1)
     in2 = vectorizer.transform(in2)
@@ -144,8 +139,6 @@ def word_eq_filter(in1, in2, mode):
         for number in line:
             summa += number
             num += 1
-    print(summa)
-    print(num)
     return word_eq_sigmoid(summa / num)
 
 
@@ -204,8 +197,13 @@ def graf(x, y):
 
 
 
+# 1 - token_comp
+# 2 - number_comp
+# 3 - word_eq
+# 4 - every_word_metric_NM
+# 5 - levenshtein_metric_NM
 
-data = read_file("learn_data.txt")
+data = read_file("NM+PROD_learn.txt")
 
 result_NM = []
 for solution in tqdm(result):
@@ -222,15 +220,25 @@ for solution in tqdm(result):
         every_word_metric_NM = every_word_metric(medicine_tokens[0], medicine_tokens[1], False)
         levenshtein_metric_NM = levenshtein_metric(medicine_tokens[0], medicine_tokens[1], False)
         if number_comp_NM == -1:
-            errors_NM.append(abs(token_comp_NM * solution[0] + word_eq_ru_NM * solution[2] +
-                              every_word_metric_NM * solution[3] + levenshtein_metric_NM * solution[4]
-                              - medicine.SCORE))
+            if int(medicine.MARK) == 0:
+                errors_NM.append(4 * (token_comp_NM * solution[0] + word_eq_ru_NM * solution[2] +
+                                  every_word_metric_NM * solution[3] + levenshtein_metric_NM * solution[4]
+                                  - int(medicine.MARK))**2)
+            else:
+                errors_NM.append((token_comp_NM * solution[0] + word_eq_ru_NM * solution[2] +
+                                         every_word_metric_NM * solution[3] + levenshtein_metric_NM * solution[4]
+                                         - int(medicine.MARK))**2)
         else:
-            errors_NM.append(abs(token_comp_NM * solution[0] + number_comp_NM * solution[1] +
+            if int(medicine.MARK) == 0:
+                errors_NM.append(4 * (token_comp_NM * solution[0] + number_comp_NM * solution[1] +
                               word_eq_ru_NM * solution[2] + every_word_metric_NM * solution[3] +
-                              levenshtein_metric_NM * solution[4] - medicine.SCORE))
+                              levenshtein_metric_NM * solution[4] - int(medicine.MARK))**2)
+            else:
+                errors_NM.append((token_comp_NM * solution[0] + number_comp_NM * solution[1] +
+                                         word_eq_ru_NM * solution[2] + every_word_metric_NM * solution[3] +
+                                         levenshtein_metric_NM * solution[4] - int(medicine.MARK))**2)
     result_NM.append([sum(errors_NM), solution])
 result_NM.sort(key=lambda result_NM: result_NM[0], reverse=False)
 for element in result_NM:
-    with open('weights_res.txt', "a", encoding="utf-8") as file:
+    with open('weights_res_NM+PROD.txt', "a", encoding="utf-8") as file:
         file.write(str(element[0]) + ' --- ' + str(element[1]) + '\n')

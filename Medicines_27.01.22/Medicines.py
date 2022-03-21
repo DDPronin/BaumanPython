@@ -187,19 +187,26 @@ def graf(x, y):
     plt.show()
 
 
+def PROD_coeff(NM):
+    if NM < 0.5:
+        return 0.5
+    else:
+        return - (NM - 0.5) + 0.5
+
+
 data = read_file('data.txt')
 
 #weights_NM1 = [0.3, 0.2, 0.25, 0.25]
 #weights_NM2 = [0.3, 0.2, 0.15, 0.15, 0.2]
 
-weights_NM2 = [0, 0, 1, 0, 0]
-weights_NM1 = [0, 1, 0, 0]
+weights_NM2 = [0.2, 0.6, 0, 0, 0.2]
+weights_NM1 = [0.5, 0, 0, 0.5]
 
 #weights_PROD1 = [0.2, 0.3, 0.2, 0.3]
 #weights_PROD2 = [0.2, 0.1, 0.3, 0.2, 0.2]
 
-weights_PROD2 = [0, 0, 1, 0, 0]
-weights_PROD1 = [0, 1, 0, 0]
+weights_PROD2 = [0.2, 0.6, 0, 0, 0.2]
+weights_PROD1 = [0.5, 0, 0, 0.5]
 
 result_NM = []  # результаты сравнений обрабатываются отдельно
 result_PROD = []  # можно создать какую-либо метрику для обобщения двух сравнений
@@ -284,7 +291,7 @@ result_PROD.sort(key=lambda result_PROD: result_PROD[0], reverse=False)  # чт�
 # # print(sum(num2)/99999)
 
 for element in tqdm(result):
-    with open('NM+PROD.txt', "a", encoding="utf-8") as file:
+    with open('NM+PROD_2.txt', "a", encoding="utf-8") as file:
         file.write(str(float(element[0])) + '\t' + element[1].CD_DT + '\t' +
                    element[1].ID + '\t' + element[1].NM_CLI + '\t' + element[1].PROD + '\t' + element[1].CD_U +
                    '\t' + element[1].NM_FULL + '\t' + element[1].GROUP_NM_RUS)
